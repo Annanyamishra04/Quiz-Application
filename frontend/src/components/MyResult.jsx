@@ -178,27 +178,25 @@ const MyResult = ( { apiBase = "http://localhost:4000" }) => {
                                 All
                             </button>
 
-                            <button onClick={() => handleSelectTech("html")}
-                            className={`${resultStyles.filterButton} ${
-                                selectedTechnology === "html"
-                                ? resultStyles.filterButtonActive
-                                : resultStyles.filterButtonInactive
-
-                            }`}
-                            >
-                                Html
-                            </button>
-
-                            <button onClick={() => handleSelectTech("css")}
-                            className={`${resultStyles.filterButton} ${
-                                selectedTechnology === "css"
-                                ? resultStyles.filterButtonActive
-                                : resultStyles.filterButtonInactive
-
-                            }`}
-                            >
-                                Css
-                            </button>
+                             {technologies.length === 0 &&
+                Array.isArray(results) &&
+                results.length > 0 &&
+                [
+                  ...new Set(results.map((r) => r.technology).filter(Boolean)),
+                ].map((tech) => (
+                  <button
+                    key={`fallback-${tech}`}
+                    onClick={() => handleSelectTech(tech)}
+                    className={`${resultStyles.filterButton} ${
+                      selectedTechnology === tech
+                        ? resultStyles.filterButtonActive
+                        : resultStyles.filterButtonInactive
+                    }`}
+                    aria-pressed={selectedTechnology === tech}
+                  >
+                    {tech}
+                  </button>
+                ))}
 
                              {technologies.length === 0 &&
                 Array.isArray(results) &&
@@ -247,8 +245,19 @@ const MyResult = ( { apiBase = "http://localhost:4000" }) => {
                    {Object.entries(grouped).map(([track, items]) =>(
                     <section key={track} className={resultStyles.trackSection}>
                         <h2 className={resultStyles.trackTitle}>{track}Track</h2>
+                        <div className={resultStyles.resultsGrid}>
+                          {items.map((r) => (
+                            <StripCard key={makeKey(r)} items={r}/>
+                          ))}
+                        </div>
                     </section>
                    ))}
+
+                   {Array.isArray(results) && results.length === 0 && !error && (
+                    <div className={resultStyles.emptyState}>
+                      No results yet. Take Quiz to see results here.
+                    </div>
+                   )}
                     </>
                 )}
             </div>
@@ -257,5 +266,74 @@ const MyResult = ( { apiBase = "http://localhost:4000" }) => {
     
   );
 };
+
+//STRIP CARD
+
+function StripCard({ item }) {
+  const percent = item.totalQuestions
+    ? Math.round((Number(item.correct) / Number(item.totalQuestions)) * 100)
+    : 0;
+
+  const getLevel = (it) => {
+    const id = (it.id || "").toString().toLowerCase();
+    const title = (it.title || "").toString().toLowerCase();
+    if (id.includes("basic") || title.includes(" basic"))
+      return { letter: "B", style: resultStyles.levelBasic };
+    if (id.includes("intermediate") || title.includes(" intermediate"))
+      return { letter: "I", style: resultStyles.levelIntermediate };
+    return { letter: "A", style: resultStyles.levelAdvanced };
+  };
+
+  const level = getLevel(item);
+
+return (
+  <article className={resultStyles.card}>
+    <div className={resultStyles.cardAccent}></div>
+    <div className={resultStyles.cardContent}>
+      <div className={resultStyles.cardHeader}>
+        <div className={resultStyles.cardInfo}>
+          <div className={`${resultStyles.levelAvatar} ${level.style}`}>
+            {level.letter}
+          </div>
+          <div className={resultStyles.cardText}>
+            <h3 className={resultStyles.cardTitle}>{item.title}</h3>
+            <div className={resultStyles.cardMeta}>
+              {item.totalQuestions} Qs 
+              {item.timeSpent ? ` • ${item.timeSpent}` : ""}
+            </div>
+          </div>
+        </div>
+        <div className={resultStyles.cardPerformance}>
+          <div className={resultStyles.performanceLabel}>Performance</div>
+          <div className={resultStyles.badgeContainer}>
+
+          
+          <Badge percent={percent}/>
+          </div>
+        </div>
+      </div>
+      <div className={resultStyles.cardStats}>
+        <div className={resultStyles.statItem}>
+          Correct:
+          <span className={resultStyles.statNumber}>{item.correct}</span>
+        </div>
+
+         <div className={resultStyles.statItem}>
+          Wrong:
+          <span className={resultStyles.statNumber}>{item.wrong}</span>
+        </div>
+
+         <div className={resultStyles.statItem}>
+          Score:
+          <span className={resultStyles.statNumber}>{percent}%</span>
+        </div>
+      </div>
+    </div>
+
+  </article>
+)
+  
+  
+}
 
 export default MyResult;
